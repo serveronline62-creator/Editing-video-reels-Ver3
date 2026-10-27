@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <title>Split Screen Recorder</title>
+  <title>Split Screen Recorder — 9:16</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     :root {
@@ -18,100 +18,408 @@
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-font-smoothing: antialiased; }
-    .app { height: 100vh; height: 100dvh; display: flex; align-items: center; justify-content: center; }
-    .phone-frame { position: relative; width: 100vw; height: 100vh; height: 100dvh; max-width: calc(100vh * 9 / 16); max-width: calc(100dvh * 9 / 16); background: #000; display: flex; flex-direction: column; overflow: hidden; }
-    .screen { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; background: #0d0d0f; display: flex; align-items: center; justify-content: center; }
+    html, body {
+      height: 100%; width: 100%;
+      background: #000;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* =====================================================
+       APP — center di layar, background hitam (letterbox)
+       ===================================================== */
+    .app {
+      height: 100vh;
+      height: 100dvh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    /* =====================================================
+       PHONE FRAME — DIPAKSA 9:16 (portrait)
+       width & height dihitung otomatis dengan min() sehingga
+       frame selalu memenuhi layar sebesar mungkin, tapi tetap
+       mempertahankan aspect ratio 9:16.
+       ===================================================== */
+    .phone-frame {
+      position: relative;
+      width:  min(100vw, calc(100dvh * 9 / 16));
+      height: min(100dvh, calc(100vw * 16 / 9));
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Fallback untuk browser lama yang belum support dvh */
+    @supports not (height: 100dvh) {
+      .phone-frame {
+        width:  min(100vw, calc(100vh * 9 / 16));
+        height: min(100vh,  calc(100vw * 16 / 9));
+      }
+    }
+
+    .screen {
+      position: relative;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow: hidden;
+      background: #0d0d0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .screen-live { flex: 0.8 1 0; }
     .screen-upload { flex: 1.2 1 0; }
-    .screen video { width: 100%; height: 100%; object-fit: cover; background: #000; display: block; }
-    .screen-upload video { object-position: 50% 50%; touch-action: none; cursor: grab; will-change: object-position; }
+
+    .screen video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      background: #000;
+      display: block;
+    }
+    .screen-upload video {
+      object-position: 50% 50%;
+      touch-action: none;
+      cursor: grab;
+      will-change: object-position;
+    }
     .screen-upload video.grabbing { cursor: grabbing; }
-    .pan-reset { position: absolute; right: 10px; bottom: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.18); background: rgba(0,0,0,0.55); color: #fff; display: flex; align-items: center; justify-content: center; z-index: 7; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform 0.15s, background 0.2s; }
+
+    .pan-reset {
+      position: absolute; right: 10px; bottom: 12px;
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.55); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 7; cursor: pointer;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: transform 0.15s, background 0.2s;
+    }
     .pan-reset svg { width: 16px; height: 16px; }
     .pan-reset:active { transform: scale(0.9); }
-    .pan-hint { position: absolute; right: 10px; bottom: 54px; padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: #fff; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 7; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 0.3s, transform 0.3s; }
+    .pan-hint {
+      position: absolute; right: 10px; bottom: 54px;
+      padding: 5px 9px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+      color: #fff; background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      z-index: 7; pointer-events: none; opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
     .pan-hint.show { opacity: 1; transform: translateY(0); }
-    .divider { flex: 0 0 2px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); z-index: 3; }
-    .badge { position: absolute; top: 12px; left: 12px; padding: 5px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.8px; color: #fff; z-index: 4; display: inline-flex; align-items: center; gap: 5px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); }
+
+    .divider {
+      flex: 0 0 2px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      z-index: 3;
+    }
+
+    .badge {
+      position: absolute; top: 12px; left: 12px;
+      padding: 5px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.8px;
+      color: #fff; z-index: 4;
+      display: inline-flex; align-items: center; gap: 5px;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
     .badge.live { background: rgba(239,68,68,0.85); }
-    .badge.live .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulseDot 1.5s ease-in-out infinite; }
+    .badge.live .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: #fff;
+      animation: pulseDot 1.5s ease-in-out infinite;
+    }
     .badge.upload { background: rgba(99,102,241,0.85); }
-    @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-    .rec-badge { position: absolute; top: calc(12px + var(--safe-top)); left: 50%; transform: translateX(-50%) translateY(-10px); padding: 7px 14px; border-radius: 999px; background: rgba(239,68,68,0.95); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 0.6px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 7px; z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; box-shadow: 0 4px 24px rgba(239,68,68,0.5); }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .rec-badge {
+      position: absolute;
+      top: calc(12px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      padding: 7px 14px; border-radius: 999px;
+      background: rgba(239,68,68,0.95); color: #fff;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.6px;
+      font-variant-numeric: tabular-nums;
+      display: flex; align-items: center; gap: 7px;
+      z-index: 30; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      box-shadow: 0 4px 24px rgba(239,68,68,0.5);
+    }
     .rec-badge.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .rec-badge .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: pulseDot 1s ease-in-out infinite; }
-    .placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 12px; text-align: center; padding: 20px; pointer-events: none; transition: opacity 0.3s; z-index: 2; }
-    .placeholder svg { width: 40px; height: 40px; opacity: 0.4; stroke: currentColor; fill: none; stroke-width: 1.5; }
+    .rec-badge .rec-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #fff;
+      animation: pulseDot 1s ease-in-out infinite;
+    }
+
+    .placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      color: var(--muted); font-size: 12px;
+      text-align: center; padding: 20px;
+      pointer-events: none; transition: opacity 0.3s; z-index: 2;
+    }
+    .placeholder svg {
+      width: 40px; height: 40px; opacity: 0.4;
+      stroke: currentColor; fill: none; stroke-width: 1.5;
+    }
     .placeholder.hidden { opacity: 0; }
-    .video-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.12); z-index: 6; cursor: pointer; transition: height 0.2s; }
+
+    .video-progress {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px; background: rgba(255,255,255,0.12);
+      z-index: 6; cursor: pointer; transition: height 0.2s;
+    }
     .video-progress:hover { height: 5px; }
-    .video-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.1s linear; box-shadow: 0 0 8px rgba(99,102,241,0.6); }
-    .control-panel { flex: 0 0 auto; background: var(--panel); border-top: 1px solid var(--border); padding: 12px 14px calc(12px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 10px; z-index: 10; }
-    .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-    .circle-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.15s, background 0.2s, opacity 0.2s; }
+    .video-progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px rgba(99,102,241,0.6);
+    }
+
+    .control-panel {
+      flex: 0 0 auto;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      padding: 12px 14px calc(12px + var(--safe-bottom));
+      display: flex; flex-direction: column; gap: 10px;
+      z-index: 10;
+    }
+    .ctrl-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; flex-wrap: wrap;
+    }
+    .circle-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, background 0.2s, opacity 0.2s;
+    }
     .circle-btn svg { width: 18px; height: 18px; }
     .circle-btn:active { transform: scale(0.9); }
     .circle-btn:disabled { opacity: 0.3; pointer-events: none; }
     .circle-btn:hover { background: var(--surface-hover); }
-    .circle-btn.primary { width: 52px; height: 52px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+    .circle-btn.primary {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    }
     .circle-btn.primary svg { width: 22px; height: 22px; }
-    .pill { padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: transform 0.15s, background 0.2s, opacity 0.2s; white-space: nowrap; }
+    .pill {
+      padding: 8px 12px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-size: 11px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+      transition: transform 0.15s, background 0.2s, opacity 0.2s;
+      white-space: nowrap;
+    }
     .pill svg { width: 14px; height: 14px; }
     .pill:active { transform: scale(0.95); }
     .pill:disabled { opacity: 0.35; pointer-events: none; }
     .pill:hover { background: var(--surface-hover); }
-    .pill.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: var(--green); }
+    .pill.active {
+      background: rgba(16,185,129,0.15);
+      border-color: rgba(16,185,129,0.4);
+      color: var(--green);
+    }
     .pill.icon-only { padding: 8px; width: 34px; justify-content: center; }
-    .record-btn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: linear-gradient(135deg, #ff3366, #e60045); color: #fff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: transform 0.15s, background 0.25s, box-shadow 0.25s; box-shadow: 0 4px 20px rgba(255,51,102,0.35); margin-top: 2px; }
+
+    .record-btn {
+      width: 100%; padding: 14px; border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #ff3366, #e60045);
+      color: #fff; font-size: 14px; font-weight: 700; letter-spacing: 0.3px;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px;
+      transition: transform 0.15s, background 0.25s, box-shadow 0.25s;
+      box-shadow: 0 4px 20px rgba(255,51,102,0.35);
+      margin-top: 2px;
+    }
     .record-btn:active { transform: scale(0.97); }
     .record-btn:disabled { opacity: 0.5; pointer-events: none; }
-    .record-btn .rec-indicator { width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: border-radius 0.25s; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
-    .record-btn.recording { background: linear-gradient(135deg, #2a2a2e, #1a1a1e); animation: recPulse 1.5s infinite; }
+    .record-btn .rec-indicator {
+      width: 14px; height: 14px; border-radius: 50%; background: #fff;
+      transition: border-radius 0.25s;
+      box-shadow: 0 0 8px rgba(255,255,255,0.6);
+    }
+    .record-btn.recording {
+      background: linear-gradient(135deg, #2a2a2e, #1a1a1e);
+      animation: recPulse 1.5s infinite;
+    }
     .record-btn.recording .rec-indicator { border-radius: 3px; }
-    @keyframes recPulse { 0%, 100% { box-shadow: 0 4px 20px rgba(239,68,68,0.3); } 50% { box-shadow: 0 4px 24px rgba(239,68,68,0.7); } }
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+      50% { box-shadow: 0 4px 24px rgba(239,68,68,0.7); }
+    }
+
     input[type="file"] { display: none; }
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 16px; padding-top: calc(16px + var(--safe-top)); padding-bottom: calc(16px + var(--safe-bottom)); }
+
+    .modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      z-index: 100; display: none;
+      align-items: center; justify-content: center;
+      padding: 16px;
+      padding-top: calc(16px + var(--safe-top));
+      padding-bottom: calc(16px + var(--safe-bottom));
+    }
     .modal.show { display: flex; }
-    .modal-card { width: 100%; max-width: 420px; background: #16161a; border-radius: 24px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; max-height: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: modalIn 0.25s ease; }
-    @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .modal-header { padding: 18px 20px; font-size: 16px; font-weight: 700; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .modal-header button { background: var(--surface); border: none; color: var(--muted); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .modal-card {
+      width: 100%; max-width: 420px;
+      background: #16161a; border-radius: 24px;
+      border: 1px solid var(--border); overflow: hidden;
+      display: flex; flex-direction: column; max-height: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 18px 20px; font-size: 16px; font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-header button {
+      background: var(--surface); border: none; color: var(--muted);
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
     .modal-header button:hover { background: var(--surface-hover); }
     .modal-header button svg { width: 16px; height: 16px; }
-    .modal-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
-    .modal-body video { width: 100%; border-radius: 14px; background: #000; max-height: 55vh; }
-    .modal-info { font-size: 12px; color: var(--muted); text-align: center; }
+    .modal-body {
+      padding: 16px; display: flex; flex-direction: column;
+      gap: 14px; overflow-y: auto;
+    }
+    .modal-body video {
+      width: 100%; border-radius: 14px; background: #000;
+      max-height: 55vh;
+    }
+    .modal-info {
+      font-size: 12px; color: var(--muted); text-align: center;
+    }
     .modal-actions { display: flex; gap: 8px; flex-direction: column; }
-    .modal-actions .modal-btn { padding: 14px; border-radius: 14px; border: none; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s, opacity 0.2s; }
+    .modal-actions .modal-btn {
+      padding: 14px; border-radius: 14px; border: none;
+      font-size: 14px; font-weight: 700; color: #fff;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, opacity 0.2s;
+    }
     .modal-actions .modal-btn:active { transform: scale(0.97); }
     .modal-actions .modal-btn svg { width: 18px; height: 18px; }
-    .modal-btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
-    .modal-btn.secondary { background: var(--surface); border: 1px solid var(--border); }
+    .modal-btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+    }
+    .modal-btn.secondary {
+      background: var(--surface); border: 1px solid var(--border);
+    }
     .modal-btn:disabled { opacity: 0.4; pointer-events: none; }
+
     .url-input-wrap { display: flex; flex-direction: column; gap: 8px; }
-    .url-input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s, background 0.2s; user-select: text; -webkit-user-select: text; }
+    .url-input {
+      width: 100%; padding: 13px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.2s, background 0.2s;
+      user-select: text; -webkit-user-select: text;
+    }
     .url-input::placeholder { color: rgba(255,255,255,0.35); }
-    .url-input:focus { border-color: rgba(99,102,241,0.6); background: rgba(255,255,255,0.09); }
-    .url-note { font-size: 11px; line-height: 1.5; color: var(--muted); padding: 0 4px; }
+    .url-input:focus {
+      border-color: rgba(99,102,241,0.6);
+      background: rgba(255,255,255,0.09);
+    }
+    .url-note {
+      font-size: 11px; line-height: 1.5; color: var(--muted);
+      padding: 0 4px;
+    }
     .url-note b { color: #fff; font-weight: 700; }
-    .url-note code { background: rgba(255,255,255,0.08); padding: 1px 5px; border-radius: 4px; color: #a5b4fc; font-size: 10.5px; }
-    .sample-section { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; border-top: 1px solid var(--border); margin-top: 4px; }
-    .sample-title { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.4px; margin-bottom: 2px; }
-    .sample-url { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 11.5px; text-align: left; cursor: pointer; font-family: inherit; transition: background 0.2s, transform 0.15s; display: flex; align-items: center; gap: 8px; }
+    .url-note code {
+      background: rgba(255,255,255,0.08);
+      padding: 1px 5px; border-radius: 4px;
+      color: #a5b4fc; font-size: 10.5px;
+    }
+    .sample-section {
+      display: flex; flex-direction: column; gap: 6px;
+      padding-top: 4px; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .sample-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.4px; margin-bottom: 2px;
+    }
+    .sample-url {
+      padding: 9px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-size: 11.5px; text-align: left;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.2s, transform 0.15s;
+      display: flex; align-items: center; gap: 8px;
+    }
     .sample-url svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.7; }
     .sample-url:hover { background: var(--surface-hover); }
     .sample-url:active { transform: scale(0.98); }
-    .toast { position: fixed; bottom: calc(220px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(30,30,35,0.98); color: #fff; padding: 12px 20px; border-radius: 14px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); box-shadow: 0 12px 32px rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; z-index: 200; max-width: 85%; text-align: center; backdrop-filter: blur(20px); white-space: pre-line; line-height: 1.45; }
+
+    .toast {
+      position: fixed;
+      bottom: calc(220px + var(--safe-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(30,30,35,0.98); color: #fff;
+      padding: 12px 20px; border-radius: 14px;
+      font-size: 13px; font-weight: 600;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200; max-width: 85%; text-align: center;
+      backdrop-filter: blur(20px);
+      white-space: pre-line; line-height: 1.45;
+    }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { background: rgba(239,68,68,0.95); }
     .toast.success { background: rgba(16,185,129,0.95); }
-    .loader { position: absolute; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px; z-index: 50; color: #fff; font-size: 13px; font-weight: 600; text-align: center; padding: 20px; }
+
+    .loader {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      z-index: 50; color: #fff; font-size: 13px; font-weight: 600;
+      text-align: center; padding: 20px;
+    }
     .loader.show { display: flex; }
     .loader span { white-space: pre-line; line-height: 1.5; }
-    .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.15); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+
     .hidden { display: none !important; }
+
     @media (max-height: 700px) {
       .control-panel { padding: 8px 12px calc(8px + var(--safe-bottom)); gap: 8px; }
       .circle-btn { width: 38px; height: 38px; }
@@ -124,7 +432,7 @@
 <body>
 
 <div class="app">
-  <div class="phone-frame">
+  <div class="phone-frame" id="phoneFrame">
     <div class="screen screen-live">
       <span class="badge live"><span class="dot"></span>LIVE</span>
       <video id="liveVideo" autoplay playsinline muted></video>
@@ -239,6 +547,11 @@ const QUALITY_PRESETS = {
 const QUALITY_ORDER = ['480', '720', '1080'];
 const SEEK_STEP = 5;
 const DEFAULT_SPLIT = 0.40;
+
+/* ★★★ TARGET ASPECT RATIO — dipaksa 9:16 portrait ★★★ */
+const TARGET_ASPECT = 16 / 9;   // height / width  (= 1.777...)
+const TARGET_ASPECT_LABEL = '9:16';
+
 const FETCH_TIMEOUT = 60000;
 const VIDEO_META_TIMEOUT = 20000;
 
@@ -337,31 +650,35 @@ const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
+/* ------------------------------------------------------------
+   getLayoutMetrics — aspect ratio DIPAKSA 9:16 (TARGET_ASPECT)
+   Split (live:upload) tetap dihitung dari layout nyata supaya
+   proporsi visual tetap sama dengan hasil rekaman.
+   ------------------------------------------------------------ */
 function getLayoutMetrics() {
   const liveRect = liveScreen.getBoundingClientRect();
   const uploadRect = uploadScreen.getBoundingClientRect();
-  const frameRect = phoneFrame.getBoundingClientRect();
-  const liveH = liveRect.height;
-  const uploadH = uploadRect.height;
-  const screensH = liveH + uploadH;
-  const screensW = frameRect.width;
-  const aspect = (screensW > 0 && screensH > 0) ? (screensH / screensW) : (16 / 9);
-  const split = (screensH > 0) ? (liveH / screensH) : DEFAULT_SPLIT;
-  return { aspect, split };
+  const totalH = liveRect.height + uploadRect.height;
+  const split = totalH > 0 ? (liveRect.height / totalH) : DEFAULT_SPLIT;
+  return { aspect: TARGET_ASPECT, split };
 }
 
 function applyQuality(q) {
   const p = QUALITY_PRESETS[q];
   const { aspect, split } = getLayoutMetrics();
+
   canvas.width = p.w;
   canvas.height = Math.max(2, Math.round((p.w * aspect) / 2) * 2);
+
   state.quality = q;
   state.splitRatio = split;
   qualityLabel.textContent = p.label;
+
+  console.log(`[Quality] ${p.label}: ${canvas.width}x${canvas.height} (${TARGET_ASPECT_LABEL})`);
 }
 
 /* ============================================================
-   POSISI MANUAL
+   POSISI MANUAL VIDEO UPLOAD
    ============================================================ */
 function applyUploadPosition() {
   const p = state.uploadPos;
@@ -631,7 +948,6 @@ function cleanupBlobUrl() {
     state.uploadBlobUrl = null;
   }
 }
-
 function resetUploadVideoElement() {
   uploadVideo.pause();
   try { uploadVideo.currentTime = 0; } catch(e){}
@@ -647,7 +963,6 @@ function resetUploadVideoElement() {
   videoProgressFill.style.width = '0%';
   updatePlayPauseIcon();
 }
-
 function setupUploadAudioRouting() {
   ensureAudioCtx();
   try {
@@ -659,7 +974,6 @@ function setupUploadAudioRouting() {
     console.warn('Audio routing gagal:', e);
   }
 }
-
 async function finalizeUploadedVideo(sourceLabel) {
   uploadPlaceholder.classList.add('hidden');
   state.uploadReady = true;
@@ -668,14 +982,8 @@ async function finalizeUploadedVideo(sourceLabel) {
   setupUploadAudioRouting();
 
   let played = false;
-  try {
-    uploadVideo.muted = false;
-    await uploadVideo.play();
-    played = true;
-  } catch (e) {
-    uploadVideo.muted = true;
-    try { await uploadVideo.play(); played = true; } catch(e2) {}
-  }
+  try { uploadVideo.muted = false; await uploadVideo.play(); played = true; }
+  catch (e) { uploadVideo.muted = true; try { await uploadVideo.play(); played = true; } catch(e2) {} }
 
   showPanHint();
   updatePlayPauseIcon();
@@ -689,7 +997,6 @@ async function finalizeUploadedVideo(sourceLabel) {
    UPLOAD — FILE
    ============================================================ */
 btnUpload.addEventListener('click', () => { fileInput.value = ''; fileInput.click(); });
-
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -760,8 +1067,6 @@ function describeMediaError() {
     default: return 'Error kode ' + err.code;
   }
 }
-
-/* Tunggu loadedmetadata — pakai addEventListener bukan on* */
 function waitForMetadata(video, timeoutMs) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -781,46 +1086,26 @@ function waitForMetadata(video, timeoutMs) {
 }
 
 /* ============================================================
-   ★ METODE UTAMA: FETCH → BLOB → OBJECTURL ★
-   Cara paling reliable: download dulu, simpan sebagai blob,
-   lalu putar dari blob URL (bebas taint, rekaman pasti bisa).
+   FETCH → BLOB → OBJECTURL (metode utama)
    ============================================================ */
 async function fetchVideoAsBlob(url) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
   try {
-    const response = await fetch(url, {
-      mode: 'cors',
-      cache: 'default',
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ${response.statusText || ''}`.trim());
-    }
-
+    const response = await fetch(url, { mode: 'cors', cache: 'default', signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText || ''}`.trim());
     const ct = (response.headers.get('content-type') || '').toLowerCase();
     console.log('[Link] Content-Type:', ct || '(kosong)');
-
     if (ct.includes('text/html') || ct.includes('application/json') || ct.includes('text/plain')) {
       throw new Error(`Server mengembalikan "${ct}", bukan video`);
     }
-
     const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
     if (contentLength > 500 * 1024 * 1024) {
       throw new Error(`File terlalu besar (${(contentLength/1048576).toFixed(0)} MB)`);
     }
-
-    console.log('[Link] Mengunduh...', contentLength ? `(${(contentLength/1048576).toFixed(1)} MB)` : '');
-
     const blob = await response.blob();
-
-    if (blob.size < 1000) {
-      throw new Error(`File terlalu kecil (${blob.size} byte)`);
-    }
-
-    console.log('[Link] Selesai diunduh:', (blob.size/1048576).toFixed(2), 'MB, type:', blob.type);
+    if (blob.size < 1000) throw new Error(`File terlalu kecil (${blob.size} byte)`);
+    console.log('[Link] Blob:', (blob.size/1048576).toFixed(2), 'MB, type:', blob.type);
     return blob;
   } finally {
     clearTimeout(timeoutId);
@@ -833,27 +1118,19 @@ async function applyBlobToVideo(blob) {
   uploadVideo.removeAttribute('src');
   uploadVideo.removeAttribute('crossorigin');
   try { uploadVideo.load(); } catch(e) {}
-
   const blobUrl = URL.createObjectURL(blob);
   state.uploadBlobUrl = blobUrl;
-
   const p = waitForMetadata(uploadVideo, 15000);
   uploadVideo.src = blobUrl;
   await p;
 }
 
-/* ============================================================
-   ★ METODE FALLBACK: DIRECT SRC ★
-   Kalau CORS gagal total, coba src langsung. Playback jalan,
-   tapi rekaman mungkin gagal (canvas taint).
-   ============================================================ */
 async function loadDirectSrc(url) {
   uploadVideo.pause();
   uploadVideo.removeAttribute('src');
   uploadVideo.removeAttribute('crossorigin');
   try { uploadVideo.load(); } catch(e) {}
   cleanupBlobUrl();
-
   const p = waitForMetadata(uploadVideo, VIDEO_META_TIMEOUT);
   uploadVideo.src = url;
   await p;
@@ -879,7 +1156,6 @@ async function loadFromUrlSmart(rawUrl) {
     url = converted;
   }
 
-  // ---- METODE 1: FETCH → BLOB ----
   showLoader('Mengunduh video...\n(Metode 1: Fetch CORS)');
   try {
     const blob = await fetchVideoAsBlob(url);
@@ -894,7 +1170,6 @@ async function loadFromUrlSmart(rawUrl) {
     hideLoader();
   }
 
-  // ---- METODE 2: DIRECT SRC (tanpa CORS) ----
   await new Promise(r => setTimeout(r, 200));
   showLoader('Coba metode alternatif...\n(Metode 2: Direct src)');
   try {
@@ -902,9 +1177,7 @@ async function loadFromUrlSmart(rawUrl) {
     state.uploadSourceType = 'url-nocors';
     hideLoader();
     await finalizeUploadedVideo('Video (link)');
-    setTimeout(() => {
-      showToast('⚠ Video dimuat. Rekaman MUNGKIN gagal (tanpa CORS).', '', 4000);
-    }, 700);
+    setTimeout(() => showToast('⚠ Video dimuat. Rekaman MUNGKIN gagal (tanpa CORS).', '', 4000), 700);
     return true;
   } catch (err2) {
     hideLoader();
@@ -933,7 +1206,6 @@ urlModal.addEventListener('click', (e) => { if (e.target === urlModal) urlModal.
 urlInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); btnLoadUrl.click(); }
 });
-
 document.querySelectorAll('.sample-url').forEach(btn => {
   btn.addEventListener('click', () => {
     urlInput.value = btn.dataset.url;
@@ -941,7 +1213,6 @@ document.querySelectorAll('.sample-url').forEach(btn => {
     showToast('Sample URL terisi — klik "Muat Video"', '', 2000);
   });
 });
-
 btnLoadUrl.addEventListener('click', async () => {
   btnLoadUrl.disabled = true;
   try {
@@ -957,7 +1228,6 @@ btnLoadUrl.addEventListener('click', async () => {
    ============================================================ */
 async function startRecording() {
   if (state.isRecording) return;
-
   if (!state.stream) await startCamera(true);
   if (!state.stream && !state.uploadReady) {
     showToast('Aktifkan kamera, upload, atau muat link dulu', 'error');
@@ -977,7 +1247,6 @@ async function startRecording() {
 
   applyQuality(state.quality);
 
-  // Cek taint kalau dari URL tanpa CORS
   if (state.uploadSourceType === 'url-nocors') {
     try {
       ctx.drawImage(uploadVideo, 0, 0, 1, 1);
@@ -1053,7 +1322,7 @@ async function startRecording() {
 
     RECORD_LOCKED_BTNS.forEach(b => b.disabled = true);
     RECORD_ACTIVE_BTNS.forEach(b => b.disabled = false);
-    showToast('🔴 Merekam — kontrol playback tetap aktif', 'success');
+    showToast(`🔴 Merekam ${TARGET_ASPECT_LABEL} (${canvas.width}×${canvas.height})`, 'success');
   } catch (err) {
     showToast('Rekam gagal: ' + err.message, 'error');
   }
@@ -1090,7 +1359,7 @@ function showPreview(blob) {
   state.previewBlob = blob;
   state.previewUrl = url;
   previewVideo.src = url;
-  previewInfo.textContent = `Ukuran: ${formatBytes(blob.size)} · Format: ${blob.type}`;
+  previewInfo.textContent = `Ukuran: ${formatBytes(blob.size)} · Format: ${blob.type} · Rasio ${TARGET_ASPECT_LABEL}`;
   previewModal.classList.add('show');
   setTimeout(() => previewVideo.play().catch(() => {}), 100);
 }
@@ -1152,7 +1421,7 @@ btnQuality.addEventListener('click', () => {
   const i = QUALITY_ORDER.indexOf(state.quality);
   const next = QUALITY_ORDER[(i + 1) % QUALITY_ORDER.length];
   applyQuality(next);
-  showToast('Kualitas: ' + QUALITY_PRESETS[next].label);
+  showToast(`Kualitas: ${QUALITY_PRESETS[next].label} (${TARGET_ASPECT_LABEL})`);
 });
 btnRecord.addEventListener('click', () => { if (state.isRecording) stopRecording(); else startRecording(); });
 btnClosePreview.addEventListener('click', closePreview);
@@ -1190,7 +1459,7 @@ applyQuality('720');
 requestAnimationFrame(() => applyQuality(state.quality));
 applyUploadPosition();
 updatePlayPauseIcon();
-console.log('%c📱 Split Screen Recorder — Fetch-Blob URL loader aktif', 'color:#6366f1;font-weight:bold;font-size:14px');
+console.log(`%c📱 Split Screen Recorder — ${TARGET_ASPECT_LABEL} lock aktif`, 'color:#6366f1;font-weight:bold;font-size:14px');
 </script>
 
 </body>
